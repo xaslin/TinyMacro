@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TinyMacro: a tiny macro recorder for Mac</title>
+<meta name="description" content="TinyMacro records your mouse and keyboard and plays it back. Loop it, speed it up, save it, or turn it into its own app. Free and open source for macOS.">
+<link rel="icon" href="favicon.png">
+<style>
+  :root {
+    --ink: #1d1d1f;
+    --muted: #6e6e73;
+    --line: #e5e5ea;
+    --soft: #f5f5f7;
+    --red: #e5484d;
+    --green: #30a46c;
+    --blue: #0a84ff;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+    color: var(--ink);
+    background: #fff;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+
+  /* Nav */
+  nav { position: sticky; top: 0; z-index: 10; background: rgba(255,255,255,.85);
+        backdrop-filter: saturate(180%) blur(12px); border-bottom: 1px solid var(--line); }
+  nav .wrap { display: flex; align-items: center; gap: 24px; height: 52px; }
+  nav .brand { display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--ink); }
+  nav .brand img { width: 24px; height: 24px; }
+  nav .links { margin-left: auto; display: flex; gap: 20px; font-size: 14px; }
+  nav .links a { color: var(--muted); }
+  nav .links a:hover { color: var(--ink); text-decoration: none; }
+
+  /* Hero */
+  header { text-align: center; padding: 72px 0 40px; }
+  header img.icon { width: 112px; height: 112px; }
+  h1 { font-size: 52px; line-height: 1.05; letter-spacing: -0.02em; margin: 18px 0 12px; }
+  .tagline { font-size: 21px; color: var(--muted); max-width: 620px; margin: 0 auto 28px; }
+  .cta { display: inline-flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px; border-radius: 999px;
+         font-weight: 600; font-size: 16px; border: 1px solid transparent; }
+  .btn:hover { text-decoration: none; filter: brightness(1.05); }
+  .btn.primary { background: var(--ink); color: #fff; }
+  .btn.ghost { border-color: var(--line); color: var(--ink); }
+  .fine { margin-top: 14px; font-size: 13px; color: var(--muted); }
+
+  /* Fake app window */
+  .stage { display: flex; justify-content: center; padding: 28px 0 64px; }
+  .window { width: 300px; border-radius: 12px; background: #fff; overflow: hidden;
+            box-shadow: 0 0 0 1px rgba(0,0,0,.08), 0 20px 50px rgba(0,0,0,.14), 0 4px 12px rgba(0,0,0,.06); }
+  .titlebar { position: relative; height: 28px; display: flex; align-items: center; justify-content: center;
+              font-size: 13px; font-weight: 600; color: #4a4a4f; }
+  .lights { position: absolute; left: 10px; display: flex; gap: 8px; }
+  .lights i { width: 12px; height: 12px; border-radius: 50%; display: block; }
+  .lights i:nth-child(1) { background: #ff5f57; }
+  .lights i:nth-child(2) { background: #febc2e; }
+  .lights i:nth-child(3) { background: #d9d9de; }
+  .toolbar { display: flex; gap: 1px; padding: 3px 4px 5px; }
+  .tool { width: 44px; height: 48px; border-radius: 6px; display: flex; flex-direction: column;
+          align-items: center; justify-content: center; gap: 2px; font-size: 10px; color: #000; cursor: default; }
+  .tool:hover { background: #ededed; }
+  .tool svg { width: 22px; height: 22px; }
+
+  /* Sections */
+  section { padding: 64px 0; border-top: 1px solid var(--line); }
+  h2 { font-size: 34px; letter-spacing: -0.015em; margin: 0 0 8px; }
+  .lead { color: var(--muted); font-size: 18px; margin: 0 0 36px; max-width: 640px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 16px; }
+  .card { background: var(--soft); border-radius: var(--radius); padding: 22px; }
+  .card h3 { margin: 10px 0 6px; font-size: 17px; }
+  .card p { margin: 0; color: var(--muted); font-size: 15px; }
+  .card .glyph { font-size: 22px; }
+
+  ol.steps { counter-reset: s; list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+  ol.steps li { counter-increment: s; display: grid; grid-template-columns: 36px 1fr; gap: 14px; align-items: start; }
+  ol.steps li::before { content: counter(s); width: 32px; height: 32px; border-radius: 50%; background: var(--ink);
+                        color: #fff; font-weight: 600; display: flex; align-items: center; justify-content: center; }
+  ol.steps strong { display: block; }
+  ol.steps span { color: var(--muted); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th, td { text-align: left; padding: 12px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 500; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; }
+  kbd { font: 13px ui-monospace, "SF Mono", Menlo, monospace; background: var(--soft); border: 1px solid var(--line);
+        border-bottom-width: 2px; border-radius: 6px; padding: 2px 7px; white-space: nowrap; }
+  code { font: 14px ui-monospace, "SF Mono", Menlo, monospace; background: var(--soft); padding: 2px 6px; border-radius: 5px; }
+  pre { background: var(--soft); border-radius: 10px; padding: 14px 16px; overflow-x: auto; }
+  pre code { background: none; padding: 0; }
+
+  .note { border-left: 3px solid var(--blue); background: #f2f7ff; padding: 14px 18px; border-radius: 0 10px 10px 0;
+          color: #2b3a55; font-size: 15px; margin-top: 22px; }
+
+  details { border-bottom: 1px solid var(--line); padding: 16px 0; }
+  details summary { cursor: pointer; font-weight: 600; list-style: none; }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::before { content: "+"; display: inline-block; width: 22px; color: var(--muted); }
+  details[open] summary::before { content: "–"; }
+  details p { color: var(--muted); margin: 10px 0 0 22px; }
+
+  footer { border-top: 1px solid var(--line); padding: 32px 0 48px; color: var(--muted); font-size: 14px; }
+  footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 24px; justify-content: space-between; }
+
+  @media (max-width: 640px) {
+    h1 { font-size: 38px; }
+    .tagline { font-size: 18px; }
+    nav .links a:not(.gh) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#"><img src="favicon.png" alt="">TinyMacro</a>
+    <div class="links">
+      <a href="#features">Features</a>
+      <a href="#how">How it works</a>
+      <a href="#shortcuts">Shortcuts</a>
+      <a href="#install">Install</a>
+      <a href="#faq">FAQ</a>
+      <a class="gh" href="https://github.com/GH_USER/TinyMacro">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<header class="wrap">
+  <img class="icon" src="icon.png" alt="TinyMacro icon">
+  <h1>Record it once.<br>Let your Mac repeat it.</h1>
+  <p class="tagline">TinyMacro is a tiny mouse and keyboard recorder for macOS. Press record, do your thing, press play. Loop it, speed it up, or turn it into its own app.</p>
+  <div class="cta">
+    <a class="btn primary" href="https://github.com/GH_USER/TinyMacro/releases/latest/download/TinyMacro.zip">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1a.75.75 0 0 1 .75.75v7.19l2.22-2.22a.75.75 0 1 1 1.06 1.06l-3.5 3.5a.75.75 0 0 1-1.06 0l-3.5-3.5a.75.75 0 0 1 1.06-1.06l2.22 2.22V1.75A.75.75 0 0 1 8 1ZM2.75 13a.75.75 0 0 0 0 1.5h10.5a.75.75 0 0 0 0-1.5H2.75Z"/></svg>
+      Download for Mac
+    </a>
+    <a class="btn ghost" href="https://github.com/GH_USER/TinyMacro">View source</a>
+  </div>
+  <p class="fine">Free &amp; open source (MIT) · macOS 14 Sonoma or later · Apple Silicon &amp; Intel · under 1 MB</p>
+</header>
+
+<div class="stage">
+  <div class="window" role="img" aria-label="The TinyMacro window: a single row of buttons labelled Open, Save, Rec, Play, .app and Prefs">
+    <div class="titlebar"><div class="lights"><i></i><i></i><i></i></div>TinyMacro</div>
+    <div class="toolbar">
+      <div class="tool"><svg viewBox="0 0 24 24"><path fill="#f5c400" d="M3 6.5A2.5 2.5 0 0 1 5.5 4h4l2 2h7A2.5 2.5 0 0 1 21 8.5v9a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5z"/></svg>Open</div>
+      <div class="tool"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3" fill="#0a84ff"/><path d="M12 7v7m0 0-3-3m3 3 3-3M8 17h8" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>Save</div>
+      <div class="tool"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#e5484d"/><circle cx="12" cy="12" r="4.5" fill="#fff"/></svg>Rec</div>
+      <div class="tool"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#30a46c"/><path d="M10 8.2v7.6l6-3.8z" fill="#fff"/></svg>Play</div>
+      <div class="tool"><svg viewBox="0 0 24 24"><path fill="#a2845e" d="M12 2.5 20.5 7v10L12 21.5 3.5 17V7z"/><path d="M3.5 7 12 11.5 20.5 7M12 11.5v10" stroke="#fff" stroke-width="1.2" fill="none" opacity=".7"/></svg>.app</div>
+      <div class="tool"><svg viewBox="0 0 24 24"><path fill="#8e8e93" d="M10.3 2h3.4l.5 2.6 1.6.7 2.2-1.5 2.4 2.4-1.5 2.2.7 1.6 2.6.5v3.4l-2.6.5-.7 1.6 1.5 2.2-2.4 2.4-2.2-1.5-1.6.7-.5 2.6h-3.4l-.5-2.6-1.6-.7-2.2 1.5-2.4-2.4 1.5-2.2-.7-1.6L2 13.7v-3.4l2.6-.5.7-1.6-1.5-2.2 2.4-2.4 2.2 1.5 1.6-.7z"/><circle cx="12" cy="12" r="3.2" fill="#fff"/></svg>Prefs</div>
+    </div>
+  </div>
+</div>
+
+<section id="features">
+  <div class="wrap">
+    <h2>Small app. Does the boring part.</h2>
+    <p class="lead">Everything sits in one row of buttons. There's nothing to set up and no scripting to learn.</p>
+    <div class="grid">
+      <div class="card"><div class="glyph">🔴</div><h3>One-click recording</h3><p>Captures mouse moves, clicks, double-clicks, drags, scrolling and keystrokes, including modifier keys.</p></div>
+      <div class="card"><div class="glyph">⏱️</div><h3>Exact timing</h3><p>Uses each event's own hardware timestamp and a real-time playback thread, so replays keep the pace you recorded.</p></div>
+      <div class="card"><div class="glyph">🔁</div><h3>Loop it</h3><p>Play once, repeat a set number of times, or run until you stop it, with an optional pause between runs.</p></div>
+      <div class="card"><div class="glyph">⚡️</div><h3>Speed control</h3><p>Play anywhere from 0.25× (slow motion) to 100× (as fast as your Mac can go).</p></div>
+      <div class="card"><div class="glyph">⌨️</div><h3>Global shortcuts</h3><p>Start and stop from any app. Pick your own shortcuts in Prefs. TinyMacro strips them out of the recording automatically.</p></div>
+      <div class="card"><div class="glyph">📦</div><h3>Export as an app</h3><p>Turn a recording into a standalone <code>.app</code> that plays the macro when you open it. Handy for sharing or for a Dock shortcut.</p></div>
+      <div class="card"><div class="glyph">💾</div><h3>Save &amp; open</h3><p>Recordings are small <code>.tinyrec</code> files. Double-click one to load it.</p></div>
+      <div class="card"><div class="glyph">🛟</div><h3>Nothing gets stuck</h3><p>If you stop mid-playback, TinyMacro releases any keys or mouse buttons it was holding down.</p></div>
+      <div class="card"><div class="glyph">🔒</div><h3>Private by design</h3><p>No network access, no analytics, no accounts. Your recordings never leave your Mac.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap">
+    <h2>How it works</h2>
+    <p class="lead">Four steps, and you only do the first one once.</p>
+    <ol class="steps">
+      <li><div><strong>Allow access</strong><span>The first time, macOS asks you to allow TinyMacro under <em>Accessibility</em> (to play back) and <em>Input Monitoring</em> (to record keys). Quit and reopen TinyMacro after allowing.</span></div></li>
+      <li><div><strong>Record</strong><span>Click <b>Rec</b> or press <kbd>⌃⌥⇧R</kbd>, then do the task: click, type, scroll, drag. Press <kbd>⌃⌥⇧R</kbd> again to stop.</span></div></li>
+      <li><div><strong>Play</strong><span>Click <b>Play</b> or press <kbd>⌃⌥⇧P</kbd>. Press it again any time to stop.</span></div></li>
+      <li><div><strong>Tune &amp; keep</strong><span>Open <b>Prefs</b> to set speed, repeats and the delay between runs. <b>Save</b> the recording, or click <b>.app</b> to make it a standalone app.</span></div></li>
+    </ol>
+  </div>
+</section>
+
+<section id="shortcuts">
+  <div class="wrap">
+    <h2>Shortcuts &amp; settings</h2>
+    <p class="lead">The defaults are below. Change any of them in <b>Prefs</b>.</p>
+    <table>
+      <thead><tr><th>Action</th><th>Default</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>Record / stop recording</td><td><kbd>⌃⌥⇧R</kbd></td><td>Control + Option + Shift + R. Works from any app.</td></tr>
+        <tr><td>Play / stop playback</td><td><kbd>⌃⌥⇧P</kbd></td><td>Also stops an exported macro app.</td></tr>
+        <tr><td>Open · Save · Export</td><td><kbd>⌘O</kbd> <kbd>⌘S</kbd> <kbd>⌘E</kbd></td><td>When TinyMacro is the active app.</td></tr>
+        <tr><td>Prefs</td><td><kbd>⌘,</kbd></td><td>Opens the settings window.</td></tr>
+      </tbody>
+    </table>
+    <table style="margin-top:28px">
+      <thead><tr><th>Setting</th><th>Options</th></tr></thead>
+      <tbody>
+        <tr><td>Playback speed</td><td>0.25×, 0.5×, 1×, 2×, 4×, 8×, 16×, 50×, 100×</td></tr>
+        <tr><td>Repeat</td><td>Play once · Repeat <i>N</i> times · Repeat until stopped</td></tr>
+        <tr><td>Wait between runs</td><td>Any number of seconds (decimals OK). Not affected by speed.</td></tr>
+        <tr><td>Options</td><td>Keep window on top · Record mouse movement (or just clicks) · Hide while playing</td></tr>
+        <tr><td>Permissions</td><td>Live status for Accessibility and Input Monitoring, with buttons that open the right System Settings page</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="install">
+  <div class="wrap">
+    <h2>Install</h2>
+    <p class="lead">Download, unzip, and drag <b>TinyMacro.app</b> into Applications.</p>
+    <ol class="steps">
+      <li><div><strong>Download</strong><span><a href="https://github.com/GH_USER/TinyMacro/releases/latest/download/TinyMacro.zip">TinyMacro.zip</a> from the latest release, then unzip it.</span></div></li>
+      <li><div><strong>Move it</strong><span>Drag <b>TinyMacro.app</b> into your <b>Applications</b> folder.</span></div></li>
+      <li><div><strong>Open it the first time</strong><span>TinyMacro isn't notarized by Apple, so macOS blocks it the first time. Open it once, then go to <b>System Settings → Privacy &amp; Security</b>, scroll down, and click <b>Open Anyway</b>.</span></div></li>
+    </ol>
+    <div class="note">Comfortable with Terminal? This removes the download block in one step:<br><code>xattr -dr com.apple.quarantine /Applications/TinyMacro.app</code></div>
+
+    <h3 style="margin-top:40px">Build from source</h3>
+    <p style="color:var(--muted)">You need the Xcode Command Line Tools (<code>xcode-select --install</code>). There's no Xcode project; one script does it.</p>
+<pre><code>git clone https://github.com/GH_USER/TinyMacro.git
+cd TinyMacro
+./build.sh          # → build/TinyMacro.app
+open build/TinyMacro.app</code></pre>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <h2>FAQ</h2>
+    <details><summary>Why does it need Accessibility and Input Monitoring?</summary>
+      <p>macOS requires Accessibility for any app that sends mouse clicks or keystrokes (playback), and Input Monitoring for any app that listens to the keyboard (recording). TinyMacro only uses them while you're recording or playing. It has no network code, so nothing is ever sent anywhere.</p></details>
+    <details><summary>It keeps asking for permission even though I allowed it.</summary>
+      <p>Quit TinyMacro completely (⌘Q) and reopen it. macOS only applies new permissions on launch. If you built it yourself and then rebuilt it, macOS may see it as a new app. Remove TinyMacro from both lists with the – button and add it again. Running <code>scripts/setup_signing.sh</code> once creates a local signing certificate so permissions carry over between builds.</p></details>
+    <details><summary>Will the macro still work if windows move around?</summary>
+      <p>TinyMacro replays clicks at the exact screen positions you recorded. Keep windows where they were when you recorded, and use the same display setup, for reliable results.</p></details>
+    <details><summary>How do I stop a macro that's running?</summary>
+      <p>Press your Play shortcut (<kbd>⌃⌥⇧P</kbd> by default). It works even while the macro is controlling the mouse, and even during the pause between runs.</p></details>
+    <details><summary>Do exported apps need TinyMacro installed?</summary>
+      <p>No. An exported app is self-contained. It needs its own Accessibility permission the first time you open it, and it quits when the macro finishes.</p></details>
+    <details><summary>Is it related to TinyTask?</summary>
+      <p>TinyMacro is an independent, open-source project inspired by the simplicity of TinyTask for Windows. It isn't affiliated with or endorsed by TinyTask's authors, and it shares no code with it.</p></details>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>TinyMacro is released under the <a href="https://github.com/GH_USER/TinyMacro/blob/main/LICENSE">MIT License</a>. © 2026 Nathaniel.</span>
+    <span><a href="https://github.com/GH_USER/TinyMacro">GitHub</a> · <a href="https://github.com/GH_USER/TinyMacro/issues">Report a bug</a> · <a href="https://github.com/GH_USER/TinyMacro/releases">Releases</a></span>
+  </div>
+</footer>
+
+</body>
+</html>
