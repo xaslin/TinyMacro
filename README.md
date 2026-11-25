@@ -8,8 +8,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/namnathaniel-tech/TinyMacro/releases/latest/download/TinyMacro.zip"><b>Download</b></a> ·
-  <a href="https://namnathaniel-tech.github.io/TinyMacro/">Website</a> ·
+  <a href="https://github.com/xaslin/TinyMacro/releases/latest/download/TinyMacro.zip"><b>Download</b></a> ·
+  <a href="https://xaslin.github.io/TinyMacro/">Website</a> ·
   <a href="LICENSE">MIT License</a>
 </p>
 
@@ -51,7 +51,7 @@ TinyMacro is one small window with six buttons: **Open · Save · Rec · Play ·
 
 ## Install
 
-1. Download [`TinyMacro.zip`](https://github.com/namnathaniel-tech/TinyMacro/releases/latest/download/TinyMacro.zip), unzip it, and move **TinyMacro.app** to Applications.
+1. Download [`TinyMacro.zip`](https://github.com/xaslin/TinyMacro/releases/latest/download/TinyMacro.zip), unzip it, and move **TinyMacro.app** to Applications.
 2. The app isn't notarized, so macOS blocks the first launch. Open it once, then go to **System Settings → Privacy & Security → Open Anyway**.
    Or in Terminal: `xattr -dr com.apple.quarantine /Applications/TinyMacro.app`
 3. When asked, allow TinyMacro under **Accessibility** (for playback) and **Input Monitoring** (for recording keys), then quit and reopen it.
@@ -63,7 +63,7 @@ Requires macOS 14 Sonoma or later. Works on Apple Silicon and Intel.
 Needs the Xcode Command Line Tools (`xcode-select --install`). There's no Xcode project.
 
 ```sh
-git clone https://github.com/namnathaniel-tech/TinyMacro.git
+git clone https://github.com/xaslin/TinyMacro.git
 cd TinyMacro
 ./build.sh            # → build/TinyMacro.app
 ```
